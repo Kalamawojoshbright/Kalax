@@ -200,7 +200,6 @@
       border-bottom: 1px solid var(--border);
       text-align: left;
     }
-    /* Graph modal – fixed size, responsive */
     .graph-modal {
       display: none;
       position: fixed;
@@ -266,7 +265,6 @@
       </div>
     </div>
 
-    <!-- Graph Modal (fixed) -->
     <div id="graphModal" class="graph-modal">
       <div class="graph-modal-content">
         <div class="graph-container">
@@ -291,7 +289,7 @@
     <div id="panel-vision" class="panel">
       <div class="card">
         <h2>KalaX Vision</h2>
-        <div class="subtitle">Face Recognition Attendance (Gallery)</div>
+        <div class="subtitle">Face Recognition Attendance</div>
         <div class="vision-card">
           <h3 style="margin-bottom:8px;">📝 Register New Face</h3>
           <input type="text" id="regName" class="input-field" placeholder="Full name" style="margin-bottom:8px;">
@@ -321,7 +319,7 @@
     <div id="panel-tool" class="panel">
       <div class="card">
         <h2>KalaX Tool</h2>
-        <div class="subtitle">Coin Pixel Measurement (Zoom & Scroll)</div>
+        <div class="subtitle">Coin Pixel Measurement</div>
         <div class="canvas-wrapper" id="toolWrapper">
           <canvas id="toolCanvas" width="500" height="400"></canvas>
         </div>
@@ -368,7 +366,7 @@
   });
 
   async function apiCall(endpoint, opts, formData=false) {
-    if (!isOnline && endpoint !== '/learn/chat') throw new Error('No internet');
+    if (!isOnline && endpoint !== '/learn/chat') throw new Error('No internet connection');
     const fetchOpts = { ...opts };
     if (!formData && opts?.body && typeof opts.body !== 'string') {
       fetchOpts.headers = { 'Content-Type': 'application/json' };
@@ -389,7 +387,7 @@
     if (tab === 'vision' && !window._faceLoaded) loadFaceModels();
   }
 
-  // ========== LEARN (graph plotting with large modal) ==========
+  // ========== LEARN (no Gemini branding) ==========
   const chatStream = document.getElementById('chatStream');
   const chatInput = document.getElementById('chatInput');
   const graphModal = document.getElementById('graphModal');
@@ -437,7 +435,6 @@
     }
     if (chartInstance) chartInstance.destroy();
     const ctx = graphCanvas.getContext('2d');
-    // Set canvas size to fill container (CSS will handle scaling)
     graphCanvas.width = 800;
     graphCanvas.height = 500;
     chartInstance = new Chart(ctx, {
@@ -494,7 +491,7 @@
       addMessage(data.response || 'No response', false);
     } catch(e) {
       if (chatStream.lastChild) chatStream.lastChild.remove();
-      addMessage(`❌ Chat error: ${e.message}`, false);
+      addMessage(`❌ Connection error. Please try again.`, false);
     }
   }
 
@@ -508,7 +505,7 @@
     try {
       const data = await apiCall('/agriculture/detect', { method:'POST', body: fd }, true);
       out.innerHTML = `<strong>Diagnosis & Treatment</strong><br>${data.diagnosis.replace(/\n/g,'<br>')}`;
-    } catch(e) { out.innerHTML = `❌ ${e.message}`; }
+    } catch(e) { out.innerHTML = `❌ Error: ${e.message}`; }
     document.getElementById('cropFile').value = '';
   }
 
@@ -615,7 +612,7 @@
       let html = '<table class="attendance-table"><thead><tr><th>Name</th><th>Category</th><th>Date</th><th>Time</th></tr></thead><tbody>';
       logs.forEach(l => {
         let icon = l.category === 'student' ? '👨‍🎓' : (l.category === 'staff' ? '👩‍🏫' : (l.category === 'visitor' ? '👤' : ''));
-        html += `<tr><td>${escapeHtml(l.name)}</span></td><td>${icon} ${l.category}</span><td>${l.date}</span></td><td>${l.time}</span></tr>`;
+        html += `<tr><td>${escapeHtml(l.name)}</span></td><td>${icon} ${l.category}</span></td><td>${l.date}</span></td><td>${l.time}</span></tr>`;
       });
       html += '</tbody></table>';
       container.innerHTML = html;
