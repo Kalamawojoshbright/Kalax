@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>KalaX – Learn · Agriculture · Vision · Tool</title>
+  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    :root {
+      --dark-blue: #0a1628;
+      --accent-blue: #2563eb;
+      --bg-light: #f8fafc;
+      --border: #e2e8f0;
+      --radius: 24px;
+    }
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-light);
+      color: #1e293b;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      padding: 0;
+      margin: 0;
+    }
+    .app {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      background: white;
+    }
+    header {
+      background: white;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    header h1 { font-size: 1.4rem; font-weight: 800; color: var(--dark-blue); }
+    .status-badge { display: flex; gap: 6px; font-size: 11px; font-weight: 600; color: #64748b; align-items: center; }
+    .dot { width: 8px; height: 8px; background: #10b981; border-radius: 50%; }
+    .tabs {
+      display: flex;
+      overflow-x: auto;
+      background: white;
+      border-bottom: 1px solid var(--border);
+      padding: 8px 12px;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .tab {
+      background: #f1f5f9;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 40px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: #334155;
+    }
+    .tab.active {
+      background: var(--accent-blue);
+      color: white;
+      box-shadow: 0 4px 12px rgba(37,99,235,0.2);
+    }
+    .workspace {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      background: var(--bg-light);
+    }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .card {
+      background: white;
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+      border: 1px solid var(--border);
+    }
+    .card h2 {
+      font-size: 1.3rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+      color: var(--dark-blue);
+    }
+    .subtitle { font-size: 0.8rem; color: #64748b; margin-bottom: 16px; }
+    .btn {
+      background: var(--accent-blue);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 14px;
+      font-weight: 700;
+      width: 100%;
+      cursor: pointer;
+      text-align: center;
+      margin-top: 8px;
+    }
+    .btn-secondary {
+      background: #f1f5f9;
+      color: var(--dark-blue);
+    }
+    .chat-stream {
+      height: 280px;
+      border: 1px solid var(--border);
+      background: #fafafa;
+      border-radius: 16px;
+      padding: 12px;
+      overflow-y: auto;
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .message {
+      padding: 8px 12px;
+      border-radius: 16px;
+      max-width: 85%;
+      font-size: 0.85rem;
+    }
+    .msg-system { background: #e2e8f0; align-self: flex-start; }
+    .msg-user { background: var(--accent-blue); color: white; align-self: flex-end; }
+    .input-row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+    .input-field {
+      flex: 1;
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      background: white;
+      min-width: 120px;
+    }
+    .dropzone {
+      border: 2px dashed #cbd5e1;
+      border-radius: 16px;
+      padding: 30px;
+      text-align: center;
+      cursor: pointer;
+      margin-bottom: 16px;
+      background: #fafcff;
+    }
+    .canvas-wrapper {
+      background: #f8fafc;
+      border-radius: 16px;
+      padding: 8px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+      overflow: auto;
+      text-align: center;
+      max-height: 500px;
+    }
+    canvas {
+      display: block;
+      margin: 0 auto;
+      cursor: crosshair;
+      background: #f1f5f9;
+    }
+    .tool-controls {
+      display: flex;
+      gap: 8px;
+      margin: 12px 0;
+      flex-wrap: wrap;
+    }
+    .tool-controls button {
+      flex: 1;
+      background: #f1f5f9;
+      border: none;
+      padding: 8px;
+      border-radius: 30px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .vision-card {
+      background: #f8fafc;
+      border-radius: 20px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .attendance-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.7rem;
+    }
+    .attendance-table th, .attendance-table td {
+      padding: 6px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+    }
+    .graph-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.85);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+    .graph-modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 24px;
+      width: 90%;
+      max-width: 900px;
+      max-height: 90vh;
+      overflow: auto;
+      text-align: center;
+    }
+    .graph-container {
+      width: 100%;
+      min-height: 400px;
+      position: relative;
+    }
+    #graphCanvas {
+      width: 100% !important;
+      height: auto !important;
+      max-height: 70vh;
+    }
+    .diagram-buttons {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 16px 0;
+    }
+    .diagram-buttons button {
+      flex: 1;
+      background: #f1f5f9;
+      border: none;
+      padding: 10px;
+      border-radius: 40px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    @media (max-width: 640px) {
+      .graph-modal-content { width: 95%; padding: 12px; }
+      .graph-container { min-height: 300px; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div><h1>KalaX</h1></div>
+    <div class="status-badge"><div id="network-dot" class="dot"></div><span id="network-text">ONLINE</span></div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('learn', this)">📖 Learn</button>
+    <button class="tab" onclick="switchTab('diagrams', this)">📐 Diagrams</button>
+    <button class="tab" onclick="switchTab('agriculture', this)">🌾 Agriculture</button>
+    <button class="tab" onclick="switchTab('vision', this)">👤 Vision</button>
+    <button class="tab" onclick="switchTab('tool', this)">📏 Tool</button>
+  </div>
+
+  <div class="workspace">
+    <!-- LEARN PANEL (only chat + graph) -->
+    <div id="panel-learn" class="panel active">
+      <div class="card">
+        <h2>KalaX Learn</h2>
+        <div class="subtitle">AI Tutor & Graph Plotter</div>
+        <div class="chat-stream" id="chatStream"></div>
+        <div class="input-row">
+          <input type="text" id="chatInput" class="input-field" placeholder="Ask or type 'Plot y = x**2'">
+          <button class="btn" style="width: auto; padding: 8px 20px; margin-top:0;" onclick="sendChat()">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DIAGRAMS PANEL (mathematical diagrams only) -->
+    <div id="panel-diagrams" class="panel">
+      <div class="card">
+        <h2>📐 Mathematical Diagrams</h2>
+        <div class="subtitle">Textbook‑style geometry and function diagrams</div>
+        <div class="diagram-buttons">
+          <button onclick="drawMathematicalDiagram('circle')">⚪ Circle</button>
+          <button onclick="drawMathematicalDiagram('right_triangle')">📐 Right Triangle</button>
+          <button onclick="drawMathematicalDiagram('square')">⬛ Square</button>
+          <button onclick="drawMathematicalDiagram('parabola')">📈 Parabola</button>
+        </div>
+        <div style="text-align: center; background: #faf8f0; border-radius: 16px; padding: 16px;">
+          <canvas id="mathDiagramCanvas" width="400" height="300" style="max-width:100%; height:auto;"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div id="graphModal" class="graph-modal">
+      <div class="graph-modal-content">
+        <div class="graph-container">
+          <canvas id="graphCanvas"></canvas>
+        </div>
+        <button onclick="document.getElementById('graphModal').style.display='none'" style="margin-top:16px; padding:8px 24px; background:#2563eb; color:white; border:none; border-radius:40px;">Close</button>
+      </div>
+    </div>
+
+    <div id="panel-agriculture" class="panel">
+      <div class="card">
+        <h2>KalaX Agriculture</h2>
+        <div class="subtitle">Crop Disease Diagnosis</div>
+        <div class="dropzone" onclick="document.getElementById('cropFile').click()">
+          <p>📸 Tap to upload leaf image</p>
+          <input type="file" id="cropFile" accept="image/*" style="display:none" onchange="processCrop()">
+        </div>
+        <div id="cropOutput" style="background:#f8fafc; padding:12px; border-radius:16px;">Waiting for image...</div>
+      </div>
+    </div>
+
+    <div id="panel-vision" class="panel">
+      <div class="card">
+        <h2>KalaX Vision</h2>
+        <div class="subtitle">Face Recognition Attendance</div>
+        <div class="vision-card">
+          <h3 style="margin-bottom:8px;">📝 Register New Face</h3>
+          <input type="text" id="regName" class="input-field" placeholder="Full name" style="margin-bottom:8px;">
+          <select id="regRole" class="input-field" style="margin-bottom:8px;">
+            <option value="student">Student</option>
+            <option value="staff">Staff</option>
+            <option value="visitor">Visitor</option>
+          </select>
+          <div class="input-row">
+            <input type="file" id="regFile" accept="image/*" class="input-field">
+            <button class="btn" style="margin-top:0; width:auto; background:var(--accent-blue);" onclick="registerFace()">Register</button>
+          </div>
+        </div>
+        <div class="vision-card">
+          <h3 style="margin-bottom:8px;">✅ Mark Attendance</h3>
+          <div class="input-row">
+            <input type="file" id="recogFile" accept="image/*" class="input-field">
+            <button class="btn" style="margin-top:0; width:auto; background:var(--accent-blue);" onclick="recognizeFace()">Recognize & Log</button>
+          </div>
+          <button class="btn-secondary" style="background:#f1f5f9; color:var(--dark-blue);" onclick="loadAttendance()">📋 Refresh List</button>
+        </div>
+        <div id="attendanceList" style="max-height:200px; overflow-y:auto;"></div>
+        <div id="visionStatus" style="font-size:0.7rem; text-align:center; margin-top:8px; color:var(--accent-blue);">Loading models...</div>
+      </div>
+    </div>
+
+    <div id="panel-tool" class="panel">
+      <div class="card">
+        <h2>KalaX Tool</h2>
+        <div class="subtitle">Coin Pixel Measurement</div>
+        <div class="canvas-wrapper" id="toolWrapper">
+          <canvas id="toolCanvas" width="500" height="400"></canvas>
+        </div>
+        <div class="tool-controls">
+          <button id="zoomInBtn" style="background:var(--accent-blue); color:white;">🔍 Zoom In</button>
+          <button id="zoomOutBtn" style="background:var(--accent-blue); color:white;">🔍 Zoom Out</button>
+          <button id="resetZoomBtn" style="background:var(--accent-blue); color:white;">⟳ Reset</button>
+        </div>
+        <div class="input-row" style="margin-top:8px;">
+          <input type="file" id="toolFile" accept="image/*" style="flex:1;">
+        </div>
+        <div class="input-row" style="margin-bottom:8px; margin-top:8px;">
+          <select id="coinRef" class="input-field">
+            <option value="2.5">500 UGX coin (2.5 cm)</option>
+            <option value="2.0">200 UGX coin (2.0 cm)</option>
+          </select>
+        </div>
+        <div class="tool-controls">
+          <button id="setRefTool" class="btn-secondary" disabled>1. Set Reference (coin)</button>
+          <button id="setObjTool" class="btn-secondary" disabled>2. Set Object</button>
+          <button id="clearTool" class="btn-secondary">Clear Points</button>
+        </div>
+        <button id="computeTool" class="btn" disabled>Compute Real Size</button>
+        <div id="toolResult" style="background:#f8fafc; padding:12px; border-radius:16px; margin-top:12px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const BACKEND = "https://kalax-backend.onrender.com";
+  let isOnline = navigator.onLine;
+  function showToast(msg) { alert(msg); }
+
+  window.addEventListener('offline', () => {
+    isOnline = false;
+    document.getElementById('network-dot').style.background = '#ef4444';
+    document.getElementById('network-text').innerText = 'OFFLINE';
+  });
+  window.addEventListener('online', () => {
+    isOnline = true;
+    document.getElementById('network-dot').style.background = '#10b981';
+    document.getElementById('network-text').innerText = 'ONLINE';
+  });
+
+  async function apiCall(endpoint, opts, formData=false) {
+    if (!isOnline && endpoint !== '/learn/chat') throw new Error('No internet connection');
+    const fetchOpts = { ...opts };
+    if (!formData && opts?.body && typeof opts.body !== 'string') {
+      fetchOpts.headers = { 'Content-Type': 'application/json' };
+      fetchOpts.body = JSON.stringify(opts.body);
+    }
+    const res = await fetch(`${BACKEND}${endpoint}`, fetchOpts);
+    if (!res.ok) throw new Error(await res.text());
+    const ct = res.headers.get('content-type');
+    if (ct && ct.includes('image/png')) return await res.blob();
+    return await res.json();
+  }
+
+  function switchTab(tab, el) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(`panel-${tab}`).classList.add('active');
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    if (el) el.classList.add('active');
+    if (tab === 'vision' && !window._faceLoaded) loadFaceModels();
+  }
+
+  // ========== MATHEMATICAL DIAGRAMS ==========
+  function drawMathematicalDiagram(type) {
+    const canvas = document.getElementById('mathDiagramCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 400;
+    canvas.height = 300;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = '#1e3a5f';
+    ctx.fillStyle = '#1e3a5f';
+    ctx.lineWidth = 2;
+    ctx.font = '14px system-ui';
+    
+    if (type === 'circle') {
+      const cx = canvas.width/2, cy = canvas.height/2, r = 80;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + r, cy);
+      ctx.stroke();
+      ctx.fillStyle = '#e94560';
+      ctx.fillText('radius', cx + r/2 - 15, cy - 5);
+      ctx.fillStyle = '#1e3a5f';
+      ctx.fillText('center', cx - 20, cy);
+      ctx.fillText('Area = πr²', cx - 40, cy + r + 20);
+    }
+    else if (type === 'right_triangle') {
+      const base = 160, height = 120;
+      const startX = canvas.width/2 - base/2;
+      const startY = canvas.height/2 + height/2;
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(startX + base, startY);
+      ctx.lineTo(startX, startY - height);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(startX + 12, startY - 12);
+      ctx.lineTo(startX, startY - 12);
+      ctx.lineTo(startX, startY);
+      ctx.stroke();
+      ctx.fillText('90°', startX + 16, startY - 8);
+      ctx.fillText('a', startX + base/2, startY + 12);
+      ctx.fillText('b', startX - 18, startY - height/2);
+      ctx.fillText('c', startX + base/2 + 10, startY - height/2 - 10);
+      ctx.fillText('a² + b² = c²', startX + base/2 - 50, startY + 30);
+    }
+    else if (type === 'square') {
+      const size = 130;
+      const x = canvas.width/2 - size/2;
+      const y = canvas.height/2 - size/2;
+      ctx.strokeRect(x, y, size, size);
+      ctx.fillText('side', x + size + 5, y + size/2);
+      ctx.fillText('Perimeter = 4s', x + size/2 - 40, y + size + 20);
+      ctx.fillText('Area = s²', x + size/2 - 30, y - 8);
+    }
+    else if (type === 'parabola') {
+      ctx.beginPath();
+      for (let x = -120; x <= 120; x += 5) {
+        let y = (x * x) / 80;
+        let canvasX = canvas.width/2 + x;
+        let canvasY = canvas.height/2 + y - 40;
+        if (x === -120) ctx.moveTo(canvasX, canvasY);
+        else ctx.lineTo(canvasX, canvasY);
+      }
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(canvas.width/2, canvas.height/2 - 70);
+      ctx.lineTo(canvas.width/2, canvas.height/2 + 70);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(canvas.width/2 - 140, canvas.height/2 - 40);
+      ctx.lineTo(canvas.width/2 + 140, canvas.height/2 - 40);
+      ctx.stroke();
+      ctx.fillText('y = x²', canvas.width/2 + 90, canvas.height/2 - 70);
+      ctx.fillText('vertex (0,0)', canvas.width/2 - 50, canvas.height/2 - 50);
+    }
+  }
+
+  // ========== LEARN (with creator identification) ==========
+  const chatStream = document.getElementById('chatStream');
+  const chatInput = document.getElementById('chatInput');
+  const graphModal = document.getElementById('graphModal');
+  const graphCanvas = document.getElementById('graphCanvas');
+  let chartInstance = null;
+
+  function addMessage(text, isUser) {
+    const div = document.createElement('div');
+    div.className = `message ${isUser ? 'msg-user' : 'msg-system'}`;
+    div.innerText = text;
+    chatStream.appendChild(div);
+    chatStream.scrollTop = chatStream.scrollHeight;
+  }
+
+  function plotGraph(expr) {
+    function evaluate(expr, x) {
+      try {
+        let jsExpr = expr.replace(/\^/g, '**');
+        const fn = new Function('x', 'with(Math){ return ' + jsExpr + ' }');
+        return fn(x);
+      } catch(e) {
+        return NaN;
+      }
+    }
+    let xMin = -6, xMax = 6;
+    const low = expr.toLowerCase();
+    if (low.includes('sin') || low.includes('cos') || low.includes('tan')) {
+      xMin = -2 * Math.PI;
+      xMax = 2 * Math.PI;
+    } else if (low.includes('log')) {
+      xMin = 0.1;
+      xMax = 8;
+    }
+    const step = (xMax - xMin) / 400;
+    const xVals = [], yVals = [];
+    for (let x = xMin; x <= xMax; x += step) {
+      let y = evaluate(expr, x);
+      if (isFinite(y) && Math.abs(y) < 50) {
+        xVals.push(Number(x.toFixed(4)));
+        yVals.push(y);
+      } else {
+        xVals.push(Number(x.toFixed(4)));
+        yVals.push(null);
+      }
+    }
+    if (chartInstance) chartInstance.destroy();
+    const ctx = graphCanvas.getContext('2d');
+    graphCanvas.width = 800;
+    graphCanvas.height = 500;
+    chartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: xVals,
+        datasets: [{
+          label: `y = ${expr}`,
+          data: yVals,
+          borderColor: '#2563eb',
+          backgroundColor: 'rgba(37,99,235,0.05)',
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false,
+          tension: 0.1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { position: 'top' },
+          tooltip: { callbacks: { label: (ctx) => `y = ${ctx.parsed.y}` } }
+        },
+        scales: {
+          x: { title: { display: true, text: 'x' } },
+          y: { title: { display: true, text: 'y' } }
+        }
+      }
+    });
+    graphModal.style.display = 'flex';
+  }
+
+  async function sendChat() {
+    const msg = chatInput.value.trim();
+    if (!msg) return;
+    addMessage(msg, true);
+    chatInput.value = '';
+    
+    // Check if user is asking about creator
+    const lowerMsg = msg.toLowerCase();
+    if (lowerMsg.includes('who created') || lowerMsg.includes('who made') || 
+        lowerMsg.includes('created by') || lowerMsg.includes('your creator') ||
+        lowerMsg.includes('who are you') && lowerMsg.includes('created')) {
+      addMessage('⏳ Thinking...', false);
+      setTimeout(() => {
+        if (chatStream.lastChild) chatStream.lastChild.remove();
+        addMessage('I was created by **Kalamawo Joshua Bright**. He is a Ugandan innovator and the founder of KalaX.', false);
+      }, 50);
+      return;
+    }
+    
+    const plotMatch = msg.match(/plot\s+(.+)/i) || msg.match(/y\s*=\s*(.+)/i);
+    if (plotMatch) {
+      let expr = plotMatch[1].trim().replace(/^y\s*=\s*/i, '');
+      addMessage('⏳ Generating graph...', false);
+      setTimeout(() => {
+        if (chatStream.lastChild) chatStream.lastChild.remove();
+        plotGraph(expr);
+        addMessage(`📈 Graph of y = ${expr} generated.`, false);
+      }, 50);
+      return;
+    }
+    addMessage('⏳ Thinking...', false);
+    try {
+      const data = await apiCall('/learn/chat', { method:'POST', body:{ message:msg } });
+      if (chatStream.lastChild) chatStream.lastChild.remove();
+      addMessage(data.response || 'No response', false);
+    } catch(e) {
+      if (chatStream.lastChild) chatStream.lastChild.remove();
+      addMessage(`❌ Connection error. Please try again.`, false);
+    }
+  }
+
+  // ========== AGRICULTURE ==========
+  async function processCrop() {
+    const file = document.getElementById('cropFile').files[0];
+    if (!file) return;
+    const out = document.getElementById('cropOutput');
+    out.innerHTML = "🔍 Analysing...";
+    const fd = new FormData(); fd.append('file', file);
+    try {
+      const data = await apiCall('/agriculture/detect', { method:'POST', body: fd }, true);
+      out.innerHTML = `<strong>Diagnosis & Treatment</strong><br>${data.diagnosis.replace(/\n/g,'<br>')}`;
+    } catch(e) { out.innerHTML = `❌ Error: ${e.message}`; }
+    document.getElementById('cropFile').value = '';
+  }
+
+  // ========== VISION ==========
+  let faceMatcher = null, labeled = [], modelsReady = false;
+  const hiddenCanvas = document.createElement('canvas'); hiddenCanvas.style.display = 'none';
+  document.body.appendChild(hiddenCanvas);
+  const ctxHidden = hiddenCanvas.getContext('2d');
+  window._faceLoaded = false;
+
+  async function loadFaceModels() {
+    const statusDiv = document.getElementById('visionStatus');
+    const uri = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights';
+    try {
+      statusDiv.innerText = "Loading detector...";
+      await faceapi.nets.tinyFaceDetector.loadFromUri(uri);
+      statusDiv.innerText = "Loading landmarks...";
+      await faceapi.nets.faceLandmark68Net.loadFromUri(uri);
+      statusDiv.innerText = "Loading recognizer...";
+      await faceapi.nets.faceRecognitionNet.loadFromUri(uri);
+      modelsReady = true;
+      window._faceLoaded = true;
+      loadStored();
+      statusDiv.innerHTML = "✅ Ready. Register faces.";
+    } catch(e) { statusDiv.innerHTML = "❌ Model load failed"; }
+  }
+  function loadStored() {
+    const stored = localStorage.getItem('kalax_faces');
+    if (stored) {
+      const faces = JSON.parse(stored);
+      labeled = faces.map(f => new faceapi.LabeledFaceDescriptors(f.label, f.descriptors.map(d => new Float32Array(d))));
+      faceMatcher = labeled.length ? new faceapi.FaceMatcher(labeled) : null;
+    } else faceMatcher = null;
+  }
+  function saveStored() {
+    const store = labeled.map(ld => ({ label: ld.label, descriptors: ld.descriptors.map(d => Array.from(d)) }));
+    localStorage.setItem('kalax_faces', JSON.stringify(store));
+    faceMatcher = labeled.length ? new faceapi.FaceMatcher(labeled) : null;
+  }
+  async function getDescriptorFromFile(file) {
+    return new Promise((res, rej) => {
+      const img = new Image();
+      img.onload = async () => {
+        hiddenCanvas.width = img.width; hiddenCanvas.height = img.height;
+        ctxHidden.drawImage(img, 0, 0);
+        const detections = await faceapi.detectAllFaces(hiddenCanvas, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptors();
+        if (!detections.length) rej(new Error('No face detected'));
+        else res(detections[0].descriptor);
+      };
+      img.onerror = () => rej(new Error('Image load failed'));
+      img.src = URL.createObjectURL(file);
+    });
+  }
+  async function registerFace() {
+    if (!modelsReady) { alert("Models loading"); return; }
+    const name = document.getElementById('regName').value.trim();
+    if (!name) { alert("Enter name"); return; }
+    const role = document.getElementById('regRole').value;
+    const file = document.getElementById('regFile').files[0];
+    if (!file) { alert("Select a face photo"); return; }
+    const label = `${role}_${name}`;
+    try {
+      const desc = await getDescriptorFromFile(file);
+      labeled = labeled.filter(ld => ld.label !== label);
+      labeled.push(new faceapi.LabeledFaceDescriptors(label, [desc]));
+      saveStored();
+      alert(`Registered ${role}: ${name}`);
+      document.getElementById('regFile').value = '';
+      document.getElementById('regName').value = '';
+      loadAttendance();
+    } catch(e) { alert(e.message); }
+  }
+  async function recognizeFace() {
+    if (!modelsReady) { alert("Models loading"); return; }
+    if (!faceMatcher) { alert("No registered faces"); return; }
+    const file = document.getElementById('recogFile').files[0];
+    if (!file) { alert("Select a face photo"); return; }
+    try {
+      const desc = await getDescriptorFromFile(file);
+      const best = faceMatcher.findBestMatch(desc);
+      let full = best.label, role = 'unknown', display = full;
+      if (best.distance < 0.7) {
+        if (full.startsWith('student_')) { role = 'student'; display = full.slice(8); }
+        else if (full.startsWith('staff_')) { role = 'staff'; display = full.slice(6); }
+        else if (full.startsWith('visitor_')) { role = 'visitor'; display = full.slice(8); }
+        else role = 'registered';
+        showToast(`Recognized: ${display} (${role})`);
+      } else { alert("Face not recognized"); return; }
+      const now = new Date();
+      const date = now.toISOString().slice(0,10);
+      const time = now.toTimeString().slice(0,5);
+      await apiCall('/attendance/log', { method:'POST', body:{ name:display, date, time, category:role } });
+      alert(`Logged ${display}`);
+      document.getElementById('recogFile').value = '';
+      loadAttendance();
+    } catch(e) { alert(e.message); }
+  }
+  async function loadAttendance() {
+    try {
+      const data = await apiCall('/attendance/summary', { method:'POST', body:{ date:null } });
+      const logs = data.logs || (Array.isArray(data) ? data : []);
+      const container = document.getElementById('attendanceList');
+      if (!logs.length) { container.innerHTML = '<div>No records</div>'; return; }
+      let html = '<table class="attendance-table"><thead><tr><th>Name</th><th>Category</th><th>Date</th><th>Time</th></tr></thead><tbody>';
+      logs.forEach(l => {
+        let icon = l.category === 'student' ? '👨‍🎓' : (l.category === 'staff' ? '👩‍🏫' : (l.category === 'visitor' ? '👤' : ''));
+        html += `<tr><td>${escapeHtml(l.name)}</span></td><td>${icon} ${l.category}</span><td>${l.date}</span></td><td>${l.time}</span></tr>`;
+      });
+      html += '</tbody><tr>';
+      container.innerHTML = html;
+    } catch(e) { document.getElementById('attendanceList').innerHTML = `Error: ${e.message}`; }
+  }
+  function escapeHtml(s) { return s.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); }
+
+  // ========== TOOL ==========
+  let toolImg = null;
+  let originalWidth = 0, originalHeight = 0;
+  let displayWidth = 500, displayHeight = 0;
+  let refPoints = [], objPoints = [], toolMode = null;
+  let currentZoom = 1;
+  const toolCanvas = document.getElementById('toolCanvas');
+  const toolCtx = toolCanvas.getContext('2d');
+  const toolWrapper = document.getElementById('toolWrapper');
+
+  function redrawTool() {
+    if (!toolImg) {
+      toolCtx.fillStyle = '#f1f5f9';
+      toolCtx.fillRect(0, 0, toolCanvas.width, toolCanvas.height);
+      toolCtx.fillStyle = '#64748b';
+      toolCtx.font = '14px sans-serif';
+      toolCtx.fillText('Load an image', toolCanvas.width/2-60, toolCanvas.height/2);
+      return;
+    }
+    const scaledWidth = displayWidth * currentZoom;
+    const scaledHeight = displayHeight * currentZoom;
+    toolCanvas.width = scaledWidth;
+    toolCanvas.height = scaledHeight;
+    toolCtx.drawImage(toolImg, 0, 0, originalWidth, originalHeight, 0, 0, scaledWidth, scaledHeight);
+    toolCtx.font = 'bold 16px sans-serif';
+    function toCanvas(origX, origY) {
+      const x = (origX / originalWidth) * scaledWidth;
+      const y = (origY / originalHeight) * scaledHeight;
+      return { x, y };
+    }
+    toolCtx.fillStyle = 'red'; toolCtx.strokeStyle = 'red'; toolCtx.lineWidth = 3;
+    if (refPoints.length === 1) {
+      const p = toCanvas(refPoints[0].x, refPoints[0].y);
+      toolCtx.beginPath(); toolCtx.arc(p.x, p.y, 8, 0, 2*Math.PI); toolCtx.fill();
+      toolCtx.fillStyle = 'white'; toolCtx.fillText('1', p.x-4, p.y+4);
+    } else if (refPoints.length === 2) {
+      const p1 = toCanvas(refPoints[0].x, refPoints[0].y);
+      const p2 = toCanvas(refPoints[1].x, refPoints[1].y);
+      toolCtx.beginPath(); toolCtx.moveTo(p1.x, p1.y); toolCtx.lineTo(p2.x, p2.y); toolCtx.stroke();
+      toolCtx.fillStyle = 'red';
+      toolCtx.beginPath(); toolCtx.arc(p1.x, p1.y, 8, 0, 2*Math.PI); toolCtx.fill();
+      toolCtx.fillStyle = 'white'; toolCtx.fillText('1', p1.x-4, p1.y+4);
+      toolCtx.fillStyle = 'red';
+      toolCtx.beginPath(); toolCtx.arc(p2.x, p2.y, 8, 0, 2*Math.PI); toolCtx.fill();
+      toolCtx.fillStyle = 'white'; toolCtx.fillText('2', p2.x-4, p2.y+4);
+    }
+    toolCtx.fillStyle = 'blue'; toolCtx.strokeStyle = 'blue';
+    if (objPoints.length === 1) {
+      const p = toCanvas(objPoints[0].x, objPoints[0].y);
+      toolCtx.beginPath(); toolCtx.arc(p.x, p.y, 8, 0, 2*Math.PI); toolCtx.fill();
+      toolCtx.fillStyle = 'white'; toolCtx.fillText('1', p.x-4, p.y+4);
+    } else if (objPoints.length === 2) {
+      const p1 = toCanvas(objPoints[0].x, objPoints[0].y);
+      const p2 = toCanvas(objPoints[1].x, objPoints[1].y);
+      toolCtx.beginPath(); toolCtx.moveTo(p1.x, p1.y); toolCtx.lineTo(p2.x, p2.y); toolCtx.stroke();
+      toolCtx.fillStyle = 'blue';
+      toolCtx.beginPath(); toolCtx.arc(p1.x, p1.y, 8, 0, 2*Math.PI); toolCtx.fill();
+      toolCtx.fillStyle = 'white'; toolCtx.fillText('1', p1.x-4, p1.y+4);
+      toolCtx.fillStyle = 'blue';
+      toolCtx.beginPath(); toolCtx.arc(p2.x, p2.y, 8, 0, 2*Math.PI); toolCtx.fill();
+      toolCtx.fillStyle = 'white'; toolCtx.fillText('2', p2.x-4, p2.y+4);
+    }
+  }
+
+  document.getElementById('toolFile').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        toolImg = img;
+        originalWidth = img.width;
+        originalHeight = img.height;
+        displayWidth = 500;
+        displayHeight = (displayWidth / originalWidth) * originalHeight;
+        currentZoom = 1;
+        refPoints = [];
+        objPoints = [];
+        document.getElementById('setRefTool').disabled = false;
+        document.getElementById('setObjTool').disabled = true;
+        document.getElementById('computeTool').disabled = true;
+        redrawTool();
+        showToast("Image loaded");
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById('zoomInBtn').onclick = () => {
+    currentZoom = Math.min(currentZoom + 0.2, 3);
+    redrawTool();
+  };
+  document.getElementById('zoomOutBtn').onclick = () => {
+    currentZoom = Math.max(currentZoom - 0.2, 0.5);
+    redrawTool();
+  };
+  document.getElementById('resetZoomBtn').onclick = () => {
+    currentZoom = 1;
+    redrawTool();
+  };
+
+  function getOriginalCoords(e) {
+    const rect = toolCanvas.getBoundingClientRect();
+    const scaleX = toolCanvas.width / rect.width;
+    const scaleY = toolCanvas.height / rect.height;
+    let canvasX = (e.clientX - rect.left) * scaleX;
+    let canvasY = (e.clientY - rect.top) * scaleY;
+    canvasX = Math.min(Math.max(0, canvasX), toolCanvas.width);
+    canvasY = Math.min(Math.max(0, canvasY), toolCanvas.height);
+    const origX = (canvasX / currentZoom) * (originalWidth / displayWidth);
+    const origY = (canvasY / currentZoom) * (originalHeight / displayHeight);
+    return { origX, origY };
+  }
+
+  toolCanvas.addEventListener('click', (e) => {
+    if (!toolImg) return;
+    if (!toolMode) {
+      showToast("Select mode first (Set Reference or Set Object)");
+      return;
+    }
+    const { origX, origY } = getOriginalCoords(e);
+    if (toolMode === 'ref') {
+      refPoints.push({ x: origX, y: origY });
+      if (refPoints.length === 2) {
+        toolMode = null;
+        document.getElementById('setObjTool').disabled = false;
+        showToast("Reference set. Now set object points.");
+      } else {
+        showToast(`Reference point ${refPoints.length} added. Click second point.`);
+      }
+      redrawTool();
+    } else if (toolMode === 'obj') {
+      objPoints.push({ x: origX, y: origY });
+      if (objPoints.length === 2) {
+        toolMode = null;
+        document.getElementById('computeTool').disabled = false;
+        showToast("Object set. Click Compute.");
+      } else {
+        showToast(`Object point ${objPoints.length} added. Click second point.`);
+      }
+      redrawTool();
+    }
+  });
+
+  document.getElementById('setRefTool').onclick = () => {
+    if (!toolImg) { alert("Load an image first"); return; }
+    toolMode = 'ref';
+    refPoints = [];
+    objPoints = [];
+    document.getElementById('setObjTool').disabled = true;
+    document.getElementById('computeTool').disabled = true;
+    redrawTool();
+    showToast("Click two points on the coin (reference)");
+  };
+  document.getElementById('setObjTool').onclick = () => {
+    if (refPoints.length !== 2) { alert("Set reference points first"); return; }
+    toolMode = 'obj';
+    objPoints = [];
+    redrawTool();
+    showToast("Click two points on the object to measure");
+  };
+  document.getElementById('clearTool').onclick = () => {
+    refPoints = [];
+    objPoints = [];
+    if (toolImg) redrawTool();
+    document.getElementById('setObjTool').disabled = true;
+    document.getElementById('computeTool').disabled = true;
+    toolMode = null;
+    showToast("Points cleared");
+  };
+  document.getElementById('computeTool').onclick = async () => {
+    if (refPoints.length !== 2 || objPoints.length !== 2) { alert("Need 2 reference and 2 object points"); return; }
+    const refPx = Math.hypot(refPoints[1].x - refPoints[0].x, refPoints[1].y - refPoints[0].y);
+    const objPx = Math.hypot(objPoints[1].x - objPoints[0].x, objPoints[1].y - objPoints[0].y);
+    const coinCm = parseFloat(document.getElementById('coinRef').value);
+    try {
+      const data = await apiCall('/measure', { method:'POST', body:{ reference_actual_cm: coinCm, reference_pixels: refPx, object_pixels: objPx, explain: true } });
+      document.getElementById('toolResult').innerHTML = `📐 Actual size: ${data.actual_cm} cm (${data.actual_inches} in)<br>${data.explanation || ''}`;
+    } catch(e) { document.getElementById('toolResult').innerHTML = `❌ ${e.message}`; }
+  };
+
+  document.getElementById('network-dot').style.background = navigator.onLine ? '#10b981' : '#ef4444';
+  loadFaceModels();
+  drawMathematicalDiagram('circle');
+</script>
+</body>
+</html>
